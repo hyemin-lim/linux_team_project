@@ -1,2 +1,1 @@
-list_delete_head
-get(find)
+list_delete_head, get(find)
