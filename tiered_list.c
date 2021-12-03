@@ -59,4 +59,10 @@ void tiered_list_add_tail(struct small_node *new, struct tiered_list_head *head)
     }
     
 }
+void traverse(struct tiered_list_head *head){
+    struct small_node *curr;
+    list_for_each_entry(curr, &(head.small_head), head){
+        printk("current value : %d\n", curr->idx);
+    }
+}
 
