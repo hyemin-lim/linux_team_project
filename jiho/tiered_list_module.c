@@ -8,10 +8,36 @@
 #include <linux/sched.h>
 #include <linux/delay.h>
 #define MAX_NUM_OF_BIG_NODE 10
+#define BILLION 1000000000
 
 
 //define
 
+unsigned long long total_time = 0;
+
+unsigned long long calclock3(struct timespec *spclock, unsigned long long *total_time)
+{
+    long temp, temp_n;
+    unsigned long long timedelay = 0;
+    if (spclock[1].tv_nsec >= spclock[0].tv_nsec)
+    {
+        temp = spclock[1].tv_sec - spclock[0].tv_sec;
+        temp_n = spclock[1].tv_nsec - spclock[0].tv_nsec;
+        timedelay = BILLION * temp + temp_n;
+    }
+    else 
+    {
+        temp = spclock[1].tv_sec - spclock[0].tv_sec - 1;
+        temp_n = BILLION + spclock[1].tv_nsec - spclock[0].tv_nsec;
+        timedelay = BILLION * temp + temp_n;
+    }
+
+    __sync_fetch_and_add(total_time, timedelay);
+  
+    return timedelay;
+}
+
+struct timespec spclock[2];
 struct small_node{
 	struct list_head head;
 	struct big_node *parent;
@@ -206,18 +232,35 @@ void test1(void){
 
 	int i;
 	struct small_node *current_node;
-	for (i=0;i<31;i++){
+	for (i=0;i<10000;i++){
 	
 		struct small_node *new=kmalloc(sizeof(struct small_node),GFP_KERNEL);
 		new->data=i;
 		tiered_list_add(new,&my_list);
 	}
-	
+	i=1;
+	ktime_get_ts(&spclock[0]);
+	list_for_each(p,&my_list.small_head){
+		current_node=list_entry(p,struct small_node,head);
+		if (i==5000){
+			printk("search data:(data,idx):(%d,%d)\n",current_node->data,current_node->idx);
+			break;
+		}
+		current_node=list_entry(p,struct small_node,head);
+		i=i+1;
+		
+	}
+	ktime_get_ts(&spclock[1]);
+	calclock3(spclock, &total_time);
+	printk("Time1:%lld\n",total_time);
+	total_time=0;
+	/*
 	list_for_each(p,&my_list.small_head){
 		current_node=list_entry(p,struct small_node,head);
 		printk("(data,idx):(%d,%d), (bighead : %p)\n",current_node->data,current_node->idx, current_node->parent);
 		
 	}
+	
 	int count_before_delete=0;
 	list_for_each(p,&my_list.big_head){
 		count_before_delete=count_before_delete+1;
@@ -257,13 +300,20 @@ void test1(void){
 	printk("big head count before after:%d\n",count_before_after);
 	
 	printk("___________________________________________________________________");
+	*/
 
 	struct small_node *res;
-	res = get(12, &my_list);
+	ktime_get_ts(&spclock[0]);
+	res = get(5000, &my_list);
+	ktime_get_ts(&spclock[1]);
+	calclock3(spclock, &total_time);
+	
 	printk("get i_th node from the list : (data:%d, idx:%d)\n", res->data, res->idx);
-
+	printk("Time2:%lld\n",total_time);
+	/*
 	res = get(9, &my_list);
 	printk("get i_th node from the list : (data:%d, idx:%d)\n", res->data, res->idx);
+	*/
 }
 
 int __init tiered_list_module_init(void){
