@@ -59,7 +59,7 @@ void tiered_list_add(struct small_node *new,struct tiered_list_head* head){
 
 		//first_node's idx==1
 		if (first_node->idx==2){
-			new->idx=MAX_NUM_OF_BIG_NODE;
+			new->idx=1;
 			struct big_node *new_big=kmalloc(sizeof(struct big_node),GFP_KERNEL);
 			new_big->child=new;
 			new->parent=new_big;
