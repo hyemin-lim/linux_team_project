@@ -143,10 +143,23 @@ struct small_node* get(int find, struct tiered_list_head* head){		// finding idx
 	}
 	else{
 		i=0;
+		int small_step = 1;
+		struct small_node *current_node;
 		struct big_node *big;
 		big=list_first_entry(&head->big_head,struct big_node,head);
-		int jump = find/MAX_NUM_OF_BIG_NODE; // for big_head jump
-		int small_step = find - (MAX_NUM_OF_BIG_NODE - small->idx) - 1; // for small_head traverse
+		
+		list_for_each(p,&my_list.small_head){
+			current_node=list_entry(p,struct small_node,head);
+			//printk("1(data,idx):(%d,%d), (bighead : %p)\n",current_node->data,current_node->idx, current_node->parent);
+			if (current_node->parent != NULL){
+				break;
+			}
+			small_step++;
+		}
+	
+		int jump = (find - small_step) / MAX_NUM_OF_BIG_NODE;
+		// int jump = find/MAX_NUM_OF_BIG_NODE; // for big_head jump
+		// int small_step = find - (MAX_NUM_OF_BIG_NODE - small->idx) - 1; // for small_head traverse
 		//printk("(jump -> %d), (small_step -> %d)", jump, small_step);
 		
 		list_for_each(p,&my_list.big_head){
@@ -176,7 +189,7 @@ void test1(void){
 
 	int i;
 	struct small_node *current_node;
-	for (i=0;i<31;i++){
+	for (i=0;i<10001;i++){
 	
 		struct small_node *new=kmalloc(sizeof(struct small_node),GFP_KERNEL);
 		new->data=i;
@@ -188,6 +201,7 @@ void test1(void){
 		printk("(data,idx):(%d,%d), (bighead : %p)\n",current_node->data,current_node->idx, current_node->parent);
 		
 	}
+	/*
 	int count_before_delete=0;
 	list_for_each(p,&my_list.big_head){
 		count_before_delete=count_before_delete+1;
@@ -227,14 +241,19 @@ void test1(void){
 	printk("big head count before after:%d\n",count_before_after);
 	
 	printk("___________________________________________________________________");
-
+*/
 	struct small_node *res;
 	res = get(12, &my_list);
 	printk("get i_th node from the list : (data:%d, idx:%d)\n", res->data, res->idx);
 
 	res = get(9, &my_list);
 	printk("get i_th node from the list : (data:%d, idx:%d)\n", res->data, res->idx);
+	
+	res = get(10000, &my_list);
+	printk("get i_th node from the list : (data:%d, idx:%d)\n", res->data, res->idx);
+	
 }
+
 
 
 int __init advanced_linked_list_module_init(void){
