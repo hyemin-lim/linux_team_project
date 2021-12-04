@@ -174,6 +174,7 @@ void tiered_list_delete_tail(struct tiered_list_head* head){
 	
 	
 }
+/*
 struct small_node* get(int find, struct tiered_list_head* head){		// finding idx
 	struct small_node *small;
 	small=list_first_entry(&head->small_head,struct small_node,head);
@@ -194,8 +195,70 @@ struct small_node* get(int find, struct tiered_list_head* head){		// finding idx
 		i=0;
 		struct big_node *big;
 		big=list_first_entry(&head->big_head,struct big_node,head);
-		int jump = find/MAX_NUM_OF_BIG_NODE; // for big_head jump
-		int small_step = find - (MAX_NUM_OF_BIG_NODE - small->idx) - 1; // for small_head traverse
+		printk("%d\n\n",MAX_NUM_OF_BIG_NODE-small->idx+1);
+		int jump = (find-(MAX_NUM_OF_BIG_NODE-small->idx+1))/MAX_NUM_OF_BIG_NODE; // for big_head jump
+		int small_step = (find - (MAX_NUM_OF_BIG_NODE-small->idx+1))%(MAX_NUM_OF_BIG_NODE); // for small_head traverse
+		printk("%d\n\n",small_step);
+		//printk("(jump -> %d), (small_step -> %d)", jump, small_step);
+		
+		list_for_each(p,&my_list.big_head){
+			if (i==jump){	// end jumping
+				break;
+			}
+			big=list_entry(p,struct big_node,head);
+			small = big->child;
+			//printk("2(data,idx):(%d,%d) %p\n",small->data, small->idx, small->head);
+			i++;
+		}
+		
+		i=1;
+		list_for_each(p,&small->head){
+			small=list_entry(p,struct small_node,head);
+			if (i == small_step){
+				//printk("3(data,idx):(%d,%d)\n",small->data,small->idx);
+				return small;
+			}
+			i++;
+		}
+	}
+	
+}
+*/
+struct small_node* get(int find, struct tiered_list_head* head){		// finding idx
+	struct small_node *small;
+	small=list_first_entry(&head->small_head,struct small_node,head);
+	//printk("small node -> (data,idx):(%d,%d)\n",small->data,small->idx);
+	
+	int i = 1;
+	if (find < MAX_NUM_OF_BIG_NODE){	// don't have to jump big_head.
+		list_for_each(p,&my_list.small_head){
+			small=list_entry(p,struct small_node,head);
+			if (i == find){
+				//printk("1(data,idx):(%d,%d)\n",small->data,small->idx);
+				return small;
+			}
+			i++;
+		}
+	}
+	else{
+		i=0;
+		int small_step = 1;
+		struct small_node *current_node;
+		struct big_node *big;
+		big=list_first_entry(&head->big_head,struct big_node,head);
+		
+		list_for_each(p,&my_list.small_head){
+			current_node=list_entry(p,struct small_node,head);
+			//printk("1(data,idx):(%d,%d), (bighead : %p)\n",current_node->data,current_node->idx, current_node->parent);
+			if (current_node->parent != NULL){
+				break;
+			}
+			small_step++;
+		}
+	
+		int jump = (find - small_step) / MAX_NUM_OF_BIG_NODE;
+		// int jump = find/MAX_NUM_OF_BIG_NODE; // for big_head jump
+		// int small_step = find - (MAX_NUM_OF_BIG_NODE - small->idx) - 1; // for small_head traverse
 		//printk("(jump -> %d), (small_step -> %d)", jump, small_step);
 		
 		list_for_each(p,&my_list.big_head){
@@ -221,7 +284,6 @@ struct small_node* get(int find, struct tiered_list_head* head){		// finding idx
 	
 }
 
-
 void traverse(struct tiered_list_head *head){
     struct small_node *curr;
     list_for_each_entry(curr, &(head->small_head), head){
@@ -232,17 +294,18 @@ void test1(void){
 
 	int i;
 	struct small_node *current_node;
-	for (i=0;i<10000;i++){
+	for (i=0;i<1000;i++){
 	
 		struct small_node *new=kmalloc(sizeof(struct small_node),GFP_KERNEL);
 		new->data=i;
 		tiered_list_add(new,&my_list);
 	}
+
 	i=1;
 	ktime_get_ts(&spclock[0]);
 	list_for_each(p,&my_list.small_head){
 		current_node=list_entry(p,struct small_node,head);
-		if (i==5000){
+		if (i==500){
 			printk("search data:(data,idx):(%d,%d)\n",current_node->data,current_node->idx);
 			break;
 		}
@@ -304,7 +367,7 @@ void test1(void){
 
 	struct small_node *res;
 	ktime_get_ts(&spclock[0]);
-	res = get(5000, &my_list);
+	res = get(500, &my_list);
 	ktime_get_ts(&spclock[1]);
 	calclock3(spclock, &total_time);
 	
