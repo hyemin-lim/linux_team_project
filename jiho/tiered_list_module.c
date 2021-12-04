@@ -92,7 +92,7 @@ void tiered_list_add_tail(struct small_node *new, struct tiered_list_head *head)
     else{
         struct small_node *last_entry = list_last_entry(&(head->small_head), struct small_node, head); //get the last node of the list
         int last_idx = last_entry->idx; //get the idx of the last node
-        int new_idx = (last_idx + 1) % 10; // new idx is (last idx + 1) % 10 => idx range is 0~9
+        int new_idx = (last_idx + 1) % MAX_NUM_OF_BIG_NODE; // new idx is (last idx + 1) % 10 => idx range is 0~9
         new->idx = new_idx; //assign new idx
 
         if(new_idx == 0){ //if new idx is 0, big node needs to be linked before addition
@@ -116,10 +116,9 @@ void tiered_list_delete(struct tiered_list_head* head){
 	first_node=list_first_entry(&head->small_head,struct small_node,head);
 	
 	//case :have to delete big_node too
-	if(first_node->idx==MAX_NUM_OF_BIG_NODE){
+	if(first_node->idx==1){
 		struct big_node *first_big_node;
 		first_big_node=first_node->parent;
-
 		list_del(&first_big_node->head);
 		kfree(first_big_node);
 
