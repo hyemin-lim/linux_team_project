@@ -108,7 +108,7 @@ void tiered_list_add(struct small_node *new,struct tiered_list_head* head){
 void tiered_list_add_tail(struct small_node *new, struct tiered_list_head *head){
     //if list is empty
     if(list_empty(&(head->small_head))){
-        new->idx = 0; //idx starts from zero
+        new->idx = 1; //idx starts from one
         struct big_node *new_big = kmalloc(sizeof(struct big_node), GFP_KERNEL); //create new big node
         new_big->child = new; //link big->small
         new->parent = new_big; //link small->big
@@ -118,10 +118,13 @@ void tiered_list_add_tail(struct small_node *new, struct tiered_list_head *head)
     else{
         struct small_node *last_entry = list_last_entry(&(head->small_head), struct small_node, head); //get the last node of the list
         int last_idx = last_entry->idx; //get the idx of the last node
-        int new_idx = (last_idx + 1) % MAX_NUM_OF_BIG_NODE; // new idx is (last idx + 1) % 10 => idx range is 0~9
+        int new_idx = (last_idx + 1); // new idx is (last idx + 1)
+		if(new_idx == 11){ //idx range is 1~10
+			new_idx = 1;
+		}
         new->idx = new_idx; //assign new idx
 
-        if(new_idx == 0){ //if new idx is 0, big node needs to be linked before addition
+        if(new_idx == 0){ //if new idx is 1, big node needs to be linked before addition
             
             struct big_node *new_big = kmalloc(sizeof(struct big_node), GFP_KERNEL); //create new big node
             new_big->child = new; //link big->small
@@ -129,7 +132,7 @@ void tiered_list_add_tail(struct small_node *new, struct tiered_list_head *head)
             list_add_tail(&(new->head), &(head->small_head)); //add small node to the list
             list_add_tail(&(new_big->head), &(head->big_head)); //add big node to the list
         }
-        else{ //if new idx is 1~9, just add it to the tail
+        else{ //if new idx is 2~10, just add it to the tail
             list_add_tail(&(new->head), &(head->small_head));
         }
 
